@@ -9,4 +9,7 @@ def saveDestDirPath(path):
 def saveIntervalTime(time):
     print "saveIntervalTime"
 
+def backup():
+    print "backup"
+
 
