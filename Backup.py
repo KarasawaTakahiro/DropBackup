@@ -17,7 +17,6 @@ class Backup():
 
     def setBackupDir(self):
         u"""
-
         """
         pass
 

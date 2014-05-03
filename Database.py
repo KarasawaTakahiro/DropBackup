@@ -8,7 +8,10 @@ class Database():
     access DB
     """
     def __init__(self):
-        pass
+        self.myself = Database()
+
+    def getInstance(self):
+        return self.myself
 
     def connect(self):
         u"""
