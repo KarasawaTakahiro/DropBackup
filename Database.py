@@ -7,14 +7,13 @@ class Database():
     u"""
     access DB
     """
-    myself = None
     con = None
 
     def __init__(self):
-        self.myself = Database()
+        pass
 
     def getInstance(self):
-        return self.myself
+        return self
 
     def _connect(self, dbName):
         u"""
@@ -22,57 +21,73 @@ class Database():
         """
         self.con = sqlite3.connect(dbName)
 
-    def mkTable(self, dbName, tabaleName, row):
+    def mkTable(self, dbName, tableName, row):
         u"""
         make a table
 
         ex.
-            mkTable("aTable", ("id integer autoincrement primaly key not null", "foo text", "bar text"))
+            mkTable("aTable", {"id":"integer autoincrement primaly key not null", "foo":"text", "bar":"text"})
         """
-        sql = u"CREATE TABLE ? ("
-        for item in xrange(len(row)):
-            sql += "?,"
-        else:
-            sql = sql[:-1]
-        sql += ")"
-        rep = list(row)
-        rep.insert(0, tabaleName)
-
+        sql = "create table %s (" % tableName
+        for item in row:
+            sql += (item + " " + row[item] + ",")
+        sql = sql[:-1] + ");"
         self._connect(dbName)
-        self.con.execute(sql, rep)
-        self._commit()
-        self._close()
+        self.con.cursor().execute(sql)
+        self.close()
 
     def checkTableCreated(self, dbName, tableName):
         u"""
         """
+        res = False
         self._connect(dbName)
-        if self.con.execute("SELECT * FROM user_tables WHERE table_name = '?'", (dbName, tabaleName)).fetchall() < 1:
-            return False
-        else:
-            return True
 
-    def insert(self, table, rows, values):
+        if int(self.con.execute("SELECT count(*) FROM sqlite_master WHERE type='table' and name=?", (tableName,)).fetchone()[0]) < 1:
+            res = False
+        else:
+            res = True
+
+        self._close()
+        return res
+
+    def insert(self, dbName, table, rows):
         u"""
         """
-        sql = u"INSERT INTO ? ("
-        for num in xrange(len(rows)):
-            sql += " ?,"
-        else:
-            sql = sql[:-1]
-        sql += u") VALUES ("
-        for num in xrange(len(values)):
-            sql += " ?,"
-        else:
-            sql = sql[:-1]
-        sql += u")"
-        rep = (list(rows)+list(values))
-        rep.insert(0, tabale)
+
+        sql = u"INSERT INTO %s" % table
+        row = u" ("
+        value = u" values ("
+
+        for item in rows:
+            row += (item + ",")
+            value += ("'"+rows[item] + "',")
+        row = row[:-1] + ")"
+        value = value[:-1] + ")"
+        sql += (row + value)
 
         self._connect(dbName)
-        self.con.execute(sql, rep)
-        self._commit()
+        self.con.cursor().execute(sql)
+        self.close()
+
+    def selectCol(self, dbName, table, col):
+        sql = "select %s from %s;" % (col, table)
+        self._connect(dbName)
+        res =  self.con.cursor().execute(sql).fetchall()
         self._close()
+        return res
+
+    def updateCol(self, dbName, table, col, val):
+        sql = "update %s set %s = ?;" % (table, col)
+        self._connect(dbName)
+        res =  self.con.cursor().execute(sql, (val,))
+        self.close()
+
+    def colNum(self, dbName, table, col):
+        sql = "select %s from %s;" % (col, table)
+        self._connect(dbName)
+        num = len(self.con.cursor().execute(sql).fetchall())
+        self._close()
+        return num
 
     def _commit(self):
         u"""
@@ -80,11 +95,15 @@ class Database():
         """
         self.con.commit()
 
-    def _close(Self):
+    def _close(self):
         u"""
         close the connection
         """
         self.con.close()
+
+    def close(self):
+        self._commit()
+        self._close()
 
 if __name__ == "__main__":
     pass
