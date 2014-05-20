@@ -6,11 +6,14 @@ import shutil
 
 from Database import Database
 
-class Backup():
+class BackupLib():
     u"""
     バックアップを行うクラス
     サーバ側
     """
+
+    DATABASE_NAME = "data.dat"
+    TABLE_NAME = "data"
 
     backupDir  = u"."
     dropboxDir = u"."
@@ -33,7 +36,7 @@ class Backup():
     def setBackupDir(self, path):
         u"""
         """
-        self.backupdir = path
+        self.backupDir = path
 
     def getBackupDir(self):
         return self.backupDir
@@ -42,7 +45,7 @@ class Backup():
         shutil.copyfile(src, dist)
 
     def move(self, src, dist):
-        copy(src, dist)
+        shutil.copy(src, dist)
         os.remove(src)
 
     def explore(self):
@@ -50,16 +53,18 @@ class Backup():
         explore dropbox dir and return dir and file list
         """
         for cdir, dirs, files in os.walk(self.dropboxDir):
-            fileOperater(cdir, files)
+            self._fileOperater(cdir, files)
 
-    def fileOperater(self, ddir, files):
+    def _fileOperater(self, ddir, files):
         u"""
         ddir equals dropbox directory
         """
         for f in files:
+            f = os.path.join(ddir, f)
             ldir = self._convertDirName(ddir)  # ldir == local(backup) dir
             self.mkdir(ldir)
-            self.move(f, self._convertDirName(f))
+            #self.move(f, self._convertDirName(f))
+            self.copy(f, self._convertDirName(f))
 
     def _convertDirName(self, dbox):
         u"""
@@ -80,4 +85,41 @@ class Backup():
         """
         if not os.path.exists(path):
             os.makedirs(path)
+
+    class DatabaseError(Exception):
+        def __init__(self, value):
+            self.value = value
+
+        def __str__(self):
+            return repr(self.value)
+
+
+class Backup(BackupLib):
+    DB_COL_DIR_DROPBOX = "dropbox_dir"
+    DB_COL_DIR_BACKUP = "backup_dir"
+
+    def __init__(self):
+        BackupLib.__init__(self)
+
+    def main(self):
+        if not getBackupDirFromDataBase():
+            raise DatabaseError("Backup Directory is had not set up.")
+        if not getDropboxDirFromDataBase():
+            raise DatabaseError("Dropbox Directory is had not set up.")
+
+
+    def getBackupDirFromDataBase(self):
+        if 0 < Database.getInstance().colNum(DATABASE_NAME, TABLE_NAME, DB_COL_DIR_BACKUP):
+            self.setBackupDir(selectCol(DATABASE_NAME, TABLE_NAME, DB_COL_DIR_BACKUP)[0][0])
+            return True
+        else:
+            return False
+
+    def getDropboxDirFromDataBase(self):
+        if 0 < Database.getInstance().colNum(DATABASE_NAME, TABLE_NAME, DB_COL_DIR_DROPBOX):
+            self.setDropboxDir(selectCol(DATABASE_NAME, TABLE_NAME, DB_COL_DIR_DROPBOX)[0][0])
+            return True
+        else:
+            return False
+
 

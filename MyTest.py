@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 # coding: utf-8
 
+"""# Database test
 from Database import Database
 
 DB_NAME = "testdb.db"
@@ -21,9 +22,15 @@ print db.colNum(DB_NAME, TABLE_NAME, "ddir")
 print db.selectCol(DB_NAME, TABLE_NAME, "ddir")
 print db.selectCol(DB_NAME, TABLE_NAME, "ldir")
 
-
 db.updateCol(DB_NAME, TABLE_NAME, "ddir", "after")
 
 print db.selectCol(DB_NAME, TABLE_NAME, "ddir")
+"""
+# explore test
+from Backup import Backup
 
 
+b = Backup()
+b.setDropboxDir("./testDBDir")
+b.setBackupDir("./testDir")
+b.explore()
