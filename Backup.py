@@ -124,6 +124,8 @@ class Backup(BackupLib):
         if not self.ROW:
             raise BackupLib.DatabaseError("database row is not set.")
 
+        fjeioaw;fjao
+
         Database().getInstance().mkTable(self.DATABASE_NAME, self.TABLE_NAME, self.ROW)
 
     def _checkTableCreated(self):
