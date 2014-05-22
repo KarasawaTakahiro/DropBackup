@@ -11,27 +11,17 @@ class BackupLib():
     バックアップを行うクラス
     サーバ側
     """
-
-    DATABASE_NAME = "data.dat"
-    TABLE_NAME = "data"
-
-    backupDir  = u"."
-    dropboxDir = u"."
-    databaseName = u""
+    backupDir  = u""
+    dropboxDir = u""
 
     def __init__(self):
         pass
 
-    def mkDatabaseTable(self):
-        if self.databaseName:
-            raise IOError, "not set database name yet..."
-        Database.getInstance().mkTable(self.databaseName)
-
-    def _checkTableCreated(self, tableName):
-        return Database.getInstance().checkTableCreated(self.databaseName, tableName)
+    def setRow(self, row):
+        self.ROW = row
 
     def setDatabaseName(self, name):
-        self.databaseName = name
+        self.DATABASE_NAME = name
 
     def setBackupDir(self, path):
         u"""
@@ -64,7 +54,8 @@ class BackupLib():
             ldir = self._convertDirName(ddir)  # ldir == local(backup) dir
             self.mkdir(ldir)
             #self.move(f, self._convertDirName(f))
-            self.copy(f, self._convertDirName(f))
+            #self.copy(f, self._convertDirName(f))
+            print "move: %s to %s", (f, self._convertDirName(f))
 
     def _convertDirName(self, dbox):
         u"""
@@ -93,31 +84,67 @@ class BackupLib():
         def __str__(self):
             return repr(self.value)
 
+    class TableNotExistsError(Exception):
+        def __init__(self):
+            self.value = "Table of database has not created yet."  #value
+
+        def __str__(self):
+            return repr(self.value)
+
 
 class Backup(BackupLib):
     DB_COL_DIR_DROPBOX = "dropbox_dir"
     DB_COL_DIR_BACKUP = "backup_dir"
 
+    DATABASE_NAME = "data.dat"
+    TABLE_NAME = "data"
+    ROW = {
+
+                      "DropboxDirectory":"text",
+                      "BackupDistination":"text",
+                      }
+
     def __init__(self):
         BackupLib.__init__(self)
 
     def main(self):
-        if not getBackupDirFromDataBase():
-            raise DatabaseError("Backup Directory is had not set up.")
-        if not getDropboxDirFromDataBase():
-            raise DatabaseError("Dropbox Directory is had not set up.")
+        if not self.getBackupDirFromDatabase():
+            raise BackupLib.DatabaseError("Backup Directory is had not set up.")
+        if not self.getDropboxDirFromDatabase():
+            raise BackupLib.DatabaseError("Dropbox Directory is had not set up.")
 
+        self.explore()
 
-    def getBackupDirFromDataBase(self):
-        if 0 < Database.getInstance().colNum(DATABASE_NAME, TABLE_NAME, DB_COL_DIR_BACKUP):
-            self.setBackupDir(selectCol(DATABASE_NAME, TABLE_NAME, DB_COL_DIR_BACKUP)[0][0])
+    def setRow(self, row):
+        self.ROW = row
+
+    def mkDatabaseTable(self):
+        if not self.DATABASE_NAME:
+            raise IOError, "not set database name yet..."
+        if not self.ROW:
+            raise BackupLib.DatabaseError("database row is not set.")
+
+        Database().getInstance().mkTable(self.DATABASE_NAME, self.TABLE_NAME, self.ROW)
+
+    def _checkTableCreated(self):
+        res = Database().getInstance().checkTableCreated(self.DATABASE_NAME, self.TABLE_NAME)
+        if not res:
+            raise BackupLib.TableNotExistsError()
+
+    def getBackupDirFromDatabase(self):
+        self._checkTableCreated()
+
+        if 0 < Database().getInstance().colNum(self.DATABASE_NAME, self.TABLE_NAME, self.DB_COL_DIR_BACKUP):
+            self.setBackupDir(self.selectCol(self.DATABASE_NAME, self.TABLE_NAME, self.DB_COL_DIR_BACKUP)[0][0])
             return True
         else:
             return False
 
-    def getDropboxDirFromDataBase(self):
-        if 0 < Database.getInstance().colNum(DATABASE_NAME, TABLE_NAME, DB_COL_DIR_DROPBOX):
-            self.setDropboxDir(selectCol(DATABASE_NAME, TABLE_NAME, DB_COL_DIR_DROPBOX)[0][0])
+    def getDropboxDirFromDatabase(self):
+        self._checkTableCreated()
+
+        if 0 < Database().getInstance().colNum(self.DATABASE_NAME, self.TABLE_NAME, self.DB_COL_DIR_DROPBOX):
+            self.setDropboxDir(self.selectCol(self.DATABASE_NAME, TABLE_NAME, self.DB_COL_DIR_DROPBOX)[0][0])
             return True
         else:
             return False
