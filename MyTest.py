@@ -41,9 +41,18 @@ b.setBackupDir("./testDir")
 b.explore()
 """
 
+
 # explore test 2
+"""
 from Backup import Backup
 
 module = Backup()
 module.main()
+"""
+
+
+# module test
+import DropBackup
+DropBackup.DropBackup()
+
 
