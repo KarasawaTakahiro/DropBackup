@@ -2,7 +2,9 @@
 # coding: utf-8
 
 import config
+import os.path
 import sqlite3
+import sys
 
 class Database():
     u"""
@@ -53,6 +55,7 @@ class Database():
 
     def insert(self, dbName, table, rows):
         u"""
+        rows = {col:val}
         """
 
         sql = u"INSERT INTO %s" % table
@@ -84,10 +87,16 @@ class Database():
         self.close()
 
     def colNum(self, dbName, table, col):
+        num = 0
         sql = "select %s from %s;" % (col, table)
         self._connect(dbName)
-        num = len(self.con.cursor().execute(sql).fetchall())
+        items = self.con.cursor().execute(sql).fetchall()
         self._close()
+
+        if 0 < len(items):
+            for item in items:
+                if item[0]:
+                    num += 1
         return num
 
     def _commit(self):
@@ -106,6 +115,12 @@ class Database():
         self._commit()
         self._close()
 
+class DatabaseError(Exception):
+    code = -1
+    def __init__(self, errorCode):
+        self.code = errorCode
+    def __str__(self):
+        return repr(self.code)
 
 class InformationDatabase(Database):
     ROW = {
@@ -115,7 +130,7 @@ class InformationDatabase(Database):
           }
 
     def __init__(self):
-        self.DATABASE_NAME = config.DATABASE_NAME
+        self.DATABASE_NAME = os.path.join(config.DATAFILES_DIR, config.DATABASE_NAME)
         self.TABLE_NAME = config.TABLE_NAME
         self.DB_COL_DIR_DROPBOX = config.DB_COL_DIR_DROPBOX
         self.DB_COL_DIR_BACKUP = config.DB_COL_DIR_BACKUP
@@ -145,6 +160,8 @@ class InformationDatabase(Database):
         res = ""
         if self.existsBackupDir():
             res = self.selectCol(self.DATABASE_NAME, self.TABLE_NAME, self.DB_COL_DIR_BACKUP)[0][0]
+        else:
+            raise DatabaseError(config.NOT_SET_BACKUP_DISTINATION_DIR)
         return res
 
     def saveDropboxDir(self,  path):
@@ -157,6 +174,6 @@ class InformationDatabase(Database):
         if self.existsBackupDir():
             self.updateCol(self.DATABASE_NAME, self.TABLE_NAME, self.DB_COL_DIR_BACKUP, path)
         else:
-            self.insert(self.DATABASE_NAME, self.TABLE_NAME, self.DB_COL_DIR_BACKUP, path)
+            self.insert(self.DATABASE_NAME, self.TABLE_NAME, {self.DB_COL_DIR_BACKUP:path})
 
 

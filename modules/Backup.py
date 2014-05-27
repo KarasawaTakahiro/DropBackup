@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 # coding: utf-8
 
+import config
 import os
 import shutil
 
@@ -14,6 +15,7 @@ class BackupLib():
     def __init__(self):
         self.dropboxDir = InformationDatabase().getDropboxDir()
         self.backupDir = InformationDatabase().getBackupDir()
+        self.srcDir = os.path.join(self.dropboxDir, config.BACKUP_SRC_DIR)
 
     def copy(self, src, dist):
         shutil.copyfile(src, dist)
@@ -22,32 +24,37 @@ class BackupLib():
     def move(self, src, dist):
         shutil.copy(src, dist)
         os.remove(src)
-        print "remove: %s" % src
+        print "move: %s \n   to %s" % (src, dist)
 
     def explore(self):
         u"""
         explore dropbox dir and return dir and file list
         """
-        for cdir, dirs, files in os.walk(self.dropboxDir):
-            self._fileOperater(cdir, files)
+        num = 0
+        for cdir, dirs, files in os.walk(self.srcDir):
+            num += self._fileOperater(cdir, files)
+        return num
 
     def _fileOperater(self, ddir, files):
         u"""
         ddir equals dropbox directory
         """
+        num = 0
         for f in files:
             f = os.path.join(ddir, f)
             ldir = self._convertDirName(ddir)  # ldir == local(backup) dir
             self.mkdir(ldir)
-            #self.move(f, self._convertDirName(f))
-            self.copy(f, self._convertDirName(f))
+            self.move(f, self._convertDirName(f))
+            num += 1
+
+        return num
 
     def _convertDirName(self, dbox):
         u"""
         dbox: dropbox dir or file
         ldir: local dir
         """
-        return os.path.join(self.backupDir, dbox[len(self.dropboxDir)+1:])
+        return os.path.join(self.backupDir, dbox[len(os.path.join(self.dropboxDir, config.BACKUP_SRC_DIR))+1:])
     def getDropboxDir(self):
         return self.dropboxDir
 
@@ -68,12 +75,12 @@ class BackupLib():
     class TableNotExistsError(Exception):
         def __init__(self):
             self.value = "Table of database has not created yet."  #value
-
         def __str__(self):
             return repr(self.value)
 
 
 class Backup(BackupLib):
+    numberOfFiles = 0
 
     def __init__(self):
         BackupLib.__init__(self)
@@ -84,6 +91,5 @@ class Backup(BackupLib):
         if not InformationDatabase().existsDropboxDir():
             raise BackupLib.DatabaseError("Dropbox Directory is had not set up.")
 
-        self.explore()
-
+        self.numberOfFiles = self.explore()
 

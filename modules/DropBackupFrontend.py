@@ -23,8 +23,7 @@ class DropBackupFrontend():
         u"""
         main routine
         """
-        args = self.parseArg()
-        self.call(args)
+        self.call(self.parseArg())
 
     def parseArg(self):
         u"""
@@ -33,8 +32,8 @@ class DropBackupFrontend():
         parser = argparse.ArgumentParser(description="backup files at Dropbox dir")
         parser.add_argument("-b", "--box", help="dropbox directory")
         parser.add_argument("-d", "--dir", help="destination directory")
-        parser.add_argument("-i", "--interval", help="set interval time for rebackup")
-        parser.add_argument("-u", "--backup", default=True, help="do backup right now")
+        parser.add_argument("-i", "--interval", help="set interval time(minune) for rebackup and do backup. if arg < 0, stop daemon.")
+        parser.add_argument("-u", "--backup", help="backup right now")
         parser.set_defaults(backup=True)
         return parser.parse_args()
 
@@ -42,13 +41,21 @@ class DropBackupFrontend():
         u"""
         call methods from parsed command
         """
+        setting = False
         if args.box:
             Modules.saveDropBoxPath(args.box)
+            setting |= True
         if args.dir:
             Modules.saveDestDirPath(args.dir)
+            setting |= True
         if args.interval:
-            Modules.saveIntervalTime(args.interval)
-        if args.backup:
+            try: 
+                interval = int(args.interval) * 60
+                Modules.backupDaemon(interval)
+            except ValueError, e: 
+                print "usage: %s -i [integer]" % sys.argv[0]
+            setting |= True
+        if not setting:
             Modules.backup()
 
 
